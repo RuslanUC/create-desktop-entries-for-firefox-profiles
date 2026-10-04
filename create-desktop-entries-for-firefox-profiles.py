@@ -24,6 +24,7 @@ Categories=Network;WebBrowser;
 Keywords=web;browser;internet;
 Actions=new-window;new-private-window;
 {X_KEY}[Managed]=true
+{X_KEY}[ProfileName]={{name}}
 
 [Desktop Action new-window]
 Name=Open a New Window
@@ -38,6 +39,27 @@ Exec=firefox {{profile_arg}} --private-window %u
 class ArgsNamespace(argparse.Namespace):
     profiles_dir: str
     update: bool
+
+
+def _check_entry_managed(entry_path: Path) -> bool:
+    entry = ConfigParser()
+
+    try:
+        entry.read(entry_path)
+    except ParsingError as e:
+        print(f"Failed to parse {entry_path}: {e}", file=sys.stderr)
+        return False
+
+    if "Desktop Entry" not in entry:
+        print(f"\"{entry_path.stem}\" does not contain \"Desktop Entry\" section")
+        return False
+
+    is_managed = entry["Desktop Entry"].get(f"{X_KEY}[Managed]", "false")
+    if is_managed != "true":
+        print(f"\"{entry_path.stem}\" is not managed by this script")
+        return False
+
+    return True
 
 
 def main() -> None:
@@ -59,6 +81,8 @@ def main() -> None:
     config = ConfigParser()
     config.read(profiles_ini)
 
+    existing_profiles = set()
+
     for section_name in config.sections():
         if section_name.startswith("Profile"):
             section = config[section_name]
@@ -78,25 +102,13 @@ def main() -> None:
             is_relative = section["IsRelative"] == "1"
 
             print(f"Got profile: {name=}, {path=}, {is_relative=}")
+            existing_profiles.add(name)
 
             desktop_entry_name = f"firefox-profile-{name}.desktop"
             desktop_entry = applications_dir / desktop_entry_name
             if desktop_entry.exists():
                 print(f"Entry file exists for profile \"{name}\"")
-                entry = ConfigParser()
-
-                try:
-                    entry.read(desktop_entry)
-                except ParsingError as e:
-                    print(f"Failed to parse {desktop_entry}: {e}", file=sys.stderr)
-                    continue
-
-                if "Desktop Entry" not in entry:
-                    print(f"\"{desktop_entry_name}\" does not contain \"Desktop Entry\" section")
-                    continue
-                is_managed = entry["Desktop Entry"].get(f"{X_KEY}[Managed]", "false")
-                if is_managed != "true":
-                    print(f"\"{desktop_entry_name}\" is not managed by this script")
+                if not _check_entry_managed(desktop_entry):
                     continue
 
             full_path = path if not is_relative else (profiles_dir / name)
@@ -110,6 +122,21 @@ def main() -> None:
                 ))
 
             print(f"Created/updated \"{desktop_entry}\"")
+
+    for file in os.listdir(applications_dir):
+        if not file.startswith("firefox-profile-"):
+            continue
+
+        entry_path = applications_dir / file
+        if not _check_entry_managed(entry_path):
+            continue
+
+        entry = ConfigParser()
+        entry.read(entry_path)
+        entry_profile = entry["Desktop Entry"].get(f"{X_KEY}[ProfileName]", "")
+        if entry_profile not in existing_profiles:
+            print(f"Deleting {entry_path} because it points to nonexistent profile \"{entry_profile}\"")
+            entry_path.unlink()
 
     if args.update:
         print("Updating desktop entries database...")
