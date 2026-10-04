@@ -1,0 +1,9 @@
+[Unit]
+Description=Generate desktop entries for firefox profiles
+
+[Service]
+Type=oneshot
+ExecStart="{script_path}" --profiles-dir "{profiles_dir}" --update
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Monitor firefox profiles config for changes to generate desktop entries
+
+[Path]
+PathModified={profiles_dir}/profiles.ini
+
+[Install]
+WantedBy=default.target

@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import subprocess
 import sys
 from configparser import ConfigParser, ParsingError
 from pathlib import Path
@@ -36,11 +37,13 @@ Exec=firefox {{profile_arg}} --private-window %u
 
 class ArgsNamespace(argparse.Namespace):
     profiles_dir: str
+    update: bool
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profiles-dir", "-p", type=str, default="~/.mozilla/firefox")
+    parser.add_argument("--update", "-u", action="store_true", default=False)
     args = parser.parse_args(namespace=ArgsNamespace())
 
     profiles_dir = Path(args.profiles_dir).expanduser()
@@ -107,6 +110,17 @@ def main() -> None:
                 ))
 
             print(f"Created/updated \"{desktop_entry}\"")
+
+    if args.update:
+        print("Updating desktop entries database...")
+        proc = subprocess.run(
+            args=["update-desktop-database", "-v", str(applications_dir)],
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+        if isinstance(proc, subprocess.CalledProcessError):
+            print(f"update-desktop-database exited with code {proc.returncode}")
+            exit(1)
 
 
 if __name__ == "__main__":
