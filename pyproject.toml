@@ -2,4 +2,9 @@
 name = "create-desktop-entries-for-firefox-profiles"
 version = "0.1.0"
 requires-python = ">=3.11"
+authors = [
+    { name = "RuslanUC", email = "dev_ruslan_uc@protonmail.com" },
+]
+readme = "README.md"
+license = "MIT"
 dependencies = []
