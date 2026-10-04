@@ -6,7 +6,7 @@ usage: create-desktop-entries-for-firefox-profiles.py [-h] [--profiles-dir PROFI
 
 options:
   -h, --help            show this help message and exit
-  --profiles-dir PROFILES_DIR, -p PROFILES_DIR  # .mozilla/firefox by default
+  --profiles-dir PROFILES_DIR, -p PROFILES_DIR  # ~/.mozilla/firefox by default
   --update, -u  # runs update-desktop-database after profiles were processed
 ```
 
